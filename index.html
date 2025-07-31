@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Leaderboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'inter': ['Inter', 'sans-serif'],
+            'mono': ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            'bg-primary': '#0a0e27',
+            'bg-secondary': '#1a1f3a',
+            'bg-tertiary': '#2d3561',
+            'text-accent': '#64ffda',
+          },
+          animation: {
+            'trophy-glow': 'trophy-glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            'trophy-glow': {
+              'from': { transform: 'scale(1)' },
+              'to': { transform: 'scale(1.1)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d3561 100%);
+    }
+    .gradient-overlay::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .glass-input {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .text-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .accent-gradient-top::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    }
+    .trophy-gold {
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    }
+    .trophy-silver {
+      filter: drop-shadow(0 0 8px rgba(192, 192, 192, 0.6));
+    }
+    .trophy-bronze {
+      filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.6));
+    }
+    .podium-1 {
+      background: rgba(255, 215, 0, 0.05);
+    }
+    .podium-2 {
+      background: rgba(192, 192, 192, 0.05);
+    }
+    .podium-3 {
+      background: rgba(205, 127, 50, 0.05);
+    }
+    .current-player {
+      background: rgba(100, 255, 218, 0.05);
+      border-left: 4px solid #64ffda;
+    }
+    .offline-banner {
+      background: rgba(250, 112, 154, 0.1);
+      border: 1px solid rgba(250, 112, 154, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen gradient-bg">
+  <div class="gradient-overlay relative w-full py-8 px-4">
+    <div id="loading-zone" class="flex flex-col items-center justify-center min-h-96 relative z-10 hidden">
+      <div class="w-15 h-15 border-4 border-white/10 border-t-text-accent rounded-full mb-6"></div>
+      <p class="text-lg text-gray-300 font-medium">Loading leaderboard data...</p>
+    </div>
+
+    <div id="main-content" class="glass-card border border-white/10 rounded-3xl p-6 md:p-10 lg:p-12 shadow-2xl w-full max-w-4xl mx-auto relative z-10">
+      <div id="error-zone" class="text-center p-8 hidden">
+        <div class="text-6xl mb-4 opacity-70">⚠️</div>
+        <h2 class="text-2xl font-semibold mb-4 text-white">Connection issues detected</h2>
+        <p class="text-base text-gray-300 mb-8 leading-relaxed">Using offline mode. Scores will sync when connection is restored.</p>
+
+        <div class="glass-input border border-white/10 rounded-2xl p-8 mb-8">
+          <h3 class="text-xl font-semibold mb-6 text-white text-center">Your Game Results</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex justify-between items-center p-3 glass-card rounded-lg border border-white/5">
+              <span class="text-sm text-gray-300 font-medium">Name:</span>
+              <strong class="font-mono font-semibold text-white" id="error-player-name">John Doe</strong>
+            </div>
+            <div class="flex justify-between items-center p-3 glass-card rounded-lg border border-white/5">
+              <span class="text-sm text-gray-300 font-medium">Department:</span>
+              <strong class="font-mono font-semibold text-white" id="error-player-dept">Computer Science</strong>
+            </div>
+            <div class="flex justify-between items-center p-3 glass-card rounded-lg border border-white/5">
+              <span class="text-sm text-gray-300 font-medium">Time:</span>
+              <strong class="font-mono font-semibold text-white" id="error-player-time">02:45</strong>
+            </div>
+            <div class="flex justify-between items-center p-3 glass-card rounded-lg border border-white/5">
+              <span class="text-sm text-gray-300 font-medium">Score:</span>
+              <strong class="font-mono font-semibold text-white" id="error-player-score">532</strong>
+            </div>
+          </div>
+        </div>
+
+        <button id="retry-btn" class="px-8 py-4 text-base font-semibold text-bg-primary bg-gradient-to-r from-blue-400 to-cyan-400 border-none rounded-xl cursor-pointer uppercase tracking-wider shadow-lg mb-4">
+          Retry Connection
+        </button>
+
+        <div class="glass-input border border-white/5 rounded-lg p-4">
+          <p class="text-sm text-gray-300 mb-2">Server endpoint:</p>
+          <code class="text-xs text-text-accent glass-card px-2 py-1 rounded">https://webverse-production.up.railway.app</code>
+        </div>
+      </div>
+
+      <div id="success-content">
+        <header class="text-center mb-12">
+          <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gradient uppercase tracking-widest">🏆 Game Leaderboard</h1>
+          <div id="offline-banner" class="offline-banner rounded-xl p-3 text-sm text-pink-400 mb-4 hidden">
+            <div class="flex items-center justify-center gap-2">
+              <span class="w-2 h-2 bg-pink-400 rounded-full"></span>
+              Note: Showing cached data. Scores will sync when back online.
+            </div>
+          </div>
+        </header>
+
+        <section class="mb-8">
+          <h2 class="text-2xl font-semibold mb-6 text-white text-center uppercase tracking-wider">Top Players</h2>
+          <div class="overflow-x-auto rounded-2xl border border-white/10">
+            <table class="w-full border-collapse glass-input text-sm md:text-base">
+              <thead>
+                <tr>
+                  <th class="glass-card text-gray-300 font-semibold p-4 text-center border-b border-white/10 uppercase tracking-wider text-xs md:text-sm">Rank</th>
+                  <th class="glass-card text-gray-300 font-semibold p-4 text-left border-b border-white/10 uppercase tracking-wider text-xs md:text-sm">Player</th>
+                  <th class="glass-card text-gray-300 font-semibold p-4 text-left border-b border-white/10 uppercase tracking-wider text-xs md:text-sm">Department</th>
+                  <th class="glass-card text-gray-300 font-semibold p-4 text-center border-b border-white/10 uppercase tracking-wider text-xs md:text-sm">Correct/Incorrect</th>
+                  <th class="glass-card text-gray-300 font-semibold p-4 text-center border-b border-white/10 uppercase tracking-wider text-xs md:text-sm">Score</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <footer class="text-center pt-8 border-t border-white/5 text-gray-400 text-sm">
+        <p>World Wide Web Day Challenge © <span id="current-year"></span></p>
+        <div id="sync-status" class="flex items-center justify-center gap-2 mt-4 text-xs text-gray-300 hidden">
+          <span>🔄</span>
+          You have <span id="pending-count">0</span> scores waiting to sync
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://backendd-production-49f7.up.railway.app/quizresults";
+
+    function getTrophyIcon(rank) {
+      switch (rank) {
+        case 1: return '<span class="text-2xl trophy-gold animate-trophy-glow">🥇</span>';
+        case 2: return '<span class="text-2xl trophy-silver animate-trophy-glow">🥈</span>';
+        case 3: return '<span class="text-2xl trophy-bronze animate-trophy-glow">🥉</span>';
+        default: return rank;
+      }
+    }
+
+    function getPodiumClass(rank) {
+      switch (rank) {
+        case 1: return 'podium-1';
+        case 2: return 'podium-2';
+        case 3: return 'podium-3';
+        default: return '';
+      }
+    }
+
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+
+        const leaderboard = data.map(player => {
+          const score = (player.correct || 0) * 10;
+          return {
+            name: player.name || "N/A",
+            department: player.department || "N/A",
+            correct: player.correct ?? 0,
+            incorrect: player.incorrect ?? 0,
+            score
+          };
+        });
+
+        leaderboard.sort((a, b) => b.score - a.score);
+        leaderboard.forEach((p, i) => p.rank = i + 1);
+
+        updateLeaderboardUI(leaderboard);
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+      }
+    }
+
+    function updateLeaderboardUI(players) {
+      const tbody = document.getElementById("leaderboard-body");
+      tbody.innerHTML = "";
+
+      players.forEach(player => {
+        const row = document.createElement("tr");
+        row.className = `border-b border-white/5 ${getPodiumClass(player.rank)}`;
+
+        row.innerHTML = `
+          <td class="p-4 text-center font-bold font-mono">${getTrophyIcon(player.rank)}</td>
+          <td class="p-4 font-semibold text-white">${player.name}</td>
+          <td class="p-4 text-gray-300 text-sm">${player.department}</td>
+          <td class="p-4 text-center font-mono font-semibold">
+            <span class="text-green-400">${player.correct}</span> /
+            <span class="text-red-400">${player.incorrect}</span>
+          </td>
+          <td class="p-4 text-center font-mono font-semibold text-text-accent">${player.score}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchLeaderboard();
+      setInterval(fetchLeaderboard, 3000);
+    });
+    setInterval(() => location.reload(), 10000);
+  </script>
+</body>
+</html>
